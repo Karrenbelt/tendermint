@@ -18,7 +18,7 @@ var (
 )
 
 func TestMempoolAddRemove(t *testing.T) {
-	txmp := setup(t, *txLimit)
+	txmp := setup(t, 0)
 	txch := make(chan *WrappedTx, 10)
 
 	f, err := os.Create(*ptrLog)
