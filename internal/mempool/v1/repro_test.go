@@ -59,11 +59,7 @@ func TestMempoolAddRemove(t *testing.T) {
 			txch <- wtx
 		}
 	}()
-	var txn []*WrappedTx
 	for tx := range txch {
-		txn = append(txn, tx)
-	}
-	for _, tx := range txn {
 		txmp.removeTx(tx, true)
 	}
 
