@@ -1,15 +1,17 @@
 package v0
 
 import (
+	"context"
+	"crypto/rand"
+	"errors"
 	"flag"
+	"runtime"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	abciclient "github.com/tendermint/tendermint/abci/client"
 	"github.com/tendermint/tendermint/abci/example/kvstore"
-	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/internal/mempool"
+	"github.com/tendermint/tendermint/types"
 )
 
 var (
@@ -26,10 +28,21 @@ func TestMempoolAddRemove(t *testing.T) {
 	}
 	defer cleanup()
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	for i := 0; i < *txLimit; i++ {
-		checkTxs(t, mp, tt.numTxsToCreate, mempool.UnknownPeerID)
-		got := mp.ReapMaxBytesMaxGas(tt.maxBytes, tt.maxGas)
-		assert.Equal(t, tt.expectedNumTxs, len(got), "Got %d txs, expected %d, tc #%d",
-			len(got), tt.expectedNumTxs, tcIndex)
-		mp.Flush()
+		info := mempool.TxInfo{SenderID: mempool.UnknownPeerID}
+		data := make([]byte, 10000)
+		rand.Read(data)
+		if err := mp.CheckTx(ctx, data, nil, info); err != nil {
+			var mpf types.ErrMempoolIsFull
+			if !errors.As(err, &mpf) {
+				t.Fatalf("CheckTx: %v", err)
+			}
+		}
+	}
+
+	mp.Flush()
+	runtime.GC()
 }
