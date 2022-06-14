@@ -18,7 +18,7 @@ var (
 )
 
 func TestMempoolAddRemove(t *testing.T) {
-	txmp := setup(t, 1000)
+	txmp := setup(t, 10000)
 	txch := make(chan *WrappedTx, 10)
 
 	f, err := os.Create(*ptrLog)
@@ -55,13 +55,29 @@ func TestMempoolAddRemove(t *testing.T) {
 				fmt.Fprintf(f, "- %p\n", w)
 			})
 
+			if txmp.canAddTx(wtx) != nil {
+				ev := txmp.priorityIndex.GetEvictableTxs(1000, int64(wtx.Size()),
+					txmp.SizeBytes(), txmp.config.MaxTxsBytes)
+				for _, v := range ev {
+					txmp.removeTx(v, true)
+				}
+			}
 			txmp.insertTx(wtx)
 			txch <- wtx
 		}
 	}()
+	var txn []*WrappedTx
 	for tx := range txch {
-		txmp.removeTx(tx, true)
+		txn = append(txn, tx)
 	}
-
+	for _, tx := range txn {
+		if !tx.removed && tx.heapIndex >= 0 {
+			txmp.removeTx(tx, true)
+		}
+	}
+	txmp.updateReCheckTxs()
+	txmp.priorityIndex = NewTxPriorityQueue()
+	runtime.GC()
+	txmp.Flush()
 	runtime.GC()
 }
