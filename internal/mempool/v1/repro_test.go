@@ -15,6 +15,7 @@ import (
 var (
 	txLimit = flag.Int("num-txn", 1, "Number of transactions")
 	ptrLog  = flag.String("logfile", "pointer.log", "Pointer log")
+	doEvict = flag.Bool("evict", false, "Simulate eviction")
 )
 
 func TestMempoolAddRemove(t *testing.T) {
@@ -55,7 +56,7 @@ func TestMempoolAddRemove(t *testing.T) {
 				fmt.Fprintf(f, "- %p\n", w)
 			})
 
-			if txmp.canAddTx(wtx) != nil {
+			if *doEvict && txmp.canAddTx(wtx) != nil {
 				ev := txmp.priorityIndex.GetEvictableTxs(1000, int64(wtx.Size()),
 					txmp.SizeBytes(), txmp.config.MaxTxsBytes)
 				for _, v := range ev {
