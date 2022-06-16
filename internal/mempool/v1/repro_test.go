@@ -13,9 +13,10 @@ import (
 )
 
 var (
-	txLimit = flag.Int("num-txn", 1, "Number of transactions")
-	ptrLog  = flag.String("logfile", "pointer.log", "Pointer log")
-	doEvict = flag.Bool("evict", false, "Simulate eviction")
+	txLimit   = flag.Int("num-txn", 1, "Number of transactions")
+	ptrLog    = flag.String("logfile", "pointer.log", "Pointer log")
+	doEvict   = flag.Bool("evict", false, "Simulate eviction")
+	doRecheck = flag.Bool("recheck", false, "Simulate re-CheckTx")
 )
 
 func TestMempoolAddRemove(t *testing.T) {
@@ -76,9 +77,12 @@ func TestMempoolAddRemove(t *testing.T) {
 			txmp.removeTx(tx, true)
 		}
 	}
-	txmp.updateReCheckTxs()
+	if *doRecheck {
+		t.Log("Simulating re-CheckTx")
+		txmp.updateReCheckTxs()
+		runtime.GC()
+	}
 	txmp.priorityIndex = NewTxPriorityQueue()
-	runtime.GC()
 	txmp.Flush()
 	runtime.GC()
 }
